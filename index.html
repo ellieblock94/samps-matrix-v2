@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAMPS Matrix Navigator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: white;
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+  }
+
+  header h1 span {
+    background: linear-gradient(135deg, #e94560, #ff6b6b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .reset-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+
+  .reset-btn:hover {
+    background: rgba(233,69,96,0.8);
+    border-color: rgba(233,69,96,0.9);
+  }
+
+  .main-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    flex-shrink: 0;
+  }
+
+  .section {
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .section.active {
+    border-color: #e94560;
+    box-shadow: 0 2px 8px rgba(233,69,96,0.1), 0 4px 20px rgba(0,0,0,0.06);
+  }
+
+  .section.disabled {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  .section.disabled .section-header {
+    background: #e8e8e8;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #f8f9fa, #f0f2f5);
+    border-bottom: 1px solid #eee;
+    flex-shrink: 0;
+  }
+
+  .step-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #1a1a2e;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .section.disabled .step-badge {
+    background: #aaa;
+  }
+
+  .section.active .step-badge {
+    background: #e94560;
+  }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a2e;
+  }
+
+  .section-subtitle {
+    font-size: 11px;
+    color: #888;
+    font-weight: 500;
+    margin-left: auto;
+  }
+
+  .section-body {
+    padding: 14px 18px;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .options-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .option-item {
+    position: relative;
+  }
+
+  .option-item input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .option-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    user-select: none;
+    white-space: nowrap;
+    background: #fafafa;
+  }
+
+  .option-label:hover {
+    border-color: #c0c0c0;
+    background: #f0f0f0;
+  }
+
+  .option-item input:checked + .option-label {
+    border-color: #e94560;
+    background: #fef0f3;
+    color: #c0392b;
+    font-weight: 600;
+  }
+
+  .option-indicator {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .option-indicator.checkbox {
+    border-radius: 4px;
+  }
+
+  .option-item input:checked + .option-label .option-indicator {
+    border-color: #e94560;
+    background: #e94560;
+  }
+
+  .option-item input:checked + .option-label .option-indicator::after {
+    content: '';
+    display: block;
+  }
+
+  .option-item input[type="radio"]:checked + .option-label .option-indicator::after {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: white;
+  }
+
+  .option-item input[type="checkbox"]:checked + .option-label .option-indicator::after {
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-top: -2px;
+  }
+
+  .category-note {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 10px;
+    font-style: italic;
+    padding: 6px 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #e94560;
+  }
+
+  /* Result Banner */
+  .result-banner {
+    flex-shrink: 0;
+    border-radius: 14px;
+    padding: 20px 24px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  .result-banner.grey {
+    background: linear-gradient(135deg, #e8e8e8, #d5d5d5);
+    color: #777;
+  }
+
+  .result-banner.amber {
+    background: linear-gradient(135deg, #fff3cd, #ffe69c);
+    color: #664d03;
+    border: 2px solid #ffda6a;
+  }
+
+  .result-banner.green {
+    background: linear-gradient(135deg, #d1e7dd, #a3cfbb);
+    color: #0a3622;
+    border: 2px solid #75b798;
+  }
+
+  .result-status {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    opacity: 0.8;
+  }
+
+  .result-route {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+  }
+
+  .result-summary {
+    margin-top: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    opacity: 0.85;
+    line-height: 1.6;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+  }
+
+  .result-summary .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .result-summary .tag-label {
+    font-weight: 700;
+    opacity: 1;
+  }
+
+  .products-empty {
+    color: #aaa;
+    font-size: 13px;
+    font-style: italic;
+    padding: 10px 0;
+  }
+
+  @media (max-width: 800px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+  <script type="application/ld+json">
+{
+  "@context": "urn:goose.ai:schema",
+  "@type": "GooseApp",
+  "name": "samps-navigator-pro",
+  "description": "SAMPS Matrix Navigator with progressive form, real-time routing logic, and result display.",
+  "width": 1200,
+  "height": 900,
+  "resizable": true,
+  "mcpServers": [
+    "apps"
+  ]
+}
+  </script>
+  <script type="application/x-goose-prd">
+Rebuild the SAMPS Matrix Navigator as a single-page form with all the following requirements:
+
+## Layout
+- All 4 sections visible on one page in a clean 2x2 grid layout
+- Sections: Market, Industry, Category, Products
+- Sections enable progressively (Industry enables after Market, Category after Industry, Products after Category)
+- All sections remain interactive — never lock/disable a completed section
+- Professional, clean styling with clear labels and good spacing
+
+## Step 1 — Market (single pick, radio buttons)
+Options: US, CA, JP, AU, UK, EU
+
+## Step 2 — Industry (single pick, radio buttons)
+Options: F&B, Retail, Health & Beauty, Professional Services
+- Enabled after Market is selected
+
+## Step 3 — Category
+- For US, CA: **single pick (radio buttons)**
+- For JP, AU, UK, EU: **multi pick (checkboxes)**
+- Options: POS & Dashboard, Banking, Customers, eCommerce, Staff, Neighborhoods
+- Enabled after Industry is selected
+
+## Step 4 — Products (multi pick, checkboxes)
+- Enabled after Category is selected (for ANY category, not just POS & Dashboard)
+- Products shown depend on selected category:
+  - POS & Dashboard: F&B modes, Retail mode, Bookings mode, Invoices, Franchise setup, Kiosk, KDS, Drive-Thru, SRI by MarketMan
+  - Banking: Checking, Savings, Loans, Credit Card, Bitcoin
+  - Customers: Marketing, Loyalty, Messages, Customer Directory, Gift Cards
+  - eCommerce: Websites, Online Ordering Profiles
+  - Staff: Shifts, Payroll, Team Comms
+  - Neighborhoods: Neighborhoods
+- "3P solutions" is ALWAYS shown regardless of category
+- For international markets with multi-pick categories, combine products from all selected categories
+
+## Result Display
+- Show SAMPS result as a prominent banner at the bottom
+- Result appears AS SOON AS it can be determined, even before all steps are complete
+- Show "Based on your selections so far" (yellow/amber) when result is known early but more steps remain
+- Show "Final routing — all selections complete" (green) when every step is filled
+- Grey placeholder when not enough info yet
+- Updates in real-time on every selection change
+- Show summary of all selections made
+
+## SAMPS Routing Logic
+
+### International Markets (result known immediately on market selection):
+- JP → JP SAMPS
+- AU → AU SAMPS
+- UK or EU → UK/EU SAMPS
+(User still fills out all steps, but result shows immediately)
+
+### US/CA — Non-POS Categories (result known on category selection):
+- Banking → Banking SAMPS
+- eCommerce → eCom SAMPS
+- Customers → Customers SAMPS
+- Staff → Staff SAMPS
+- Neighborhoods → Neighborhoods SAMPS
+(User still picks products, but result shows immediately)
+
+### US/CA — POS & Dashboard (result after product selection):
+Priority order (STRICT — check in this exact order):
+
+**#1 Franchise SAMPS** — HIGHEST PRIORITY, NO EXCEPTIONS
+If product contains "Franchise setup" → Franchise SAMPS. Always. Regardless of industry, other products, anything.
+
+**#2 Services SAMPS**
+If industry = Health & Beauty OR Professional Services AND product contains "Bookings mode" OR "Invoices" → Services SAMPS. Always wins over Hybrid/F&B/Retail. Even if F&B products or Retail mode are also selected.
+
+**#3 Hybrid RTL/F&B SAMPS**
+Three triggers (any one is enough):
+a) ANY industry + product contains "Retail mode" AND any F&B product (F&B modes, Kiosk, KDS, Drive-Thru, SRI by MarketMan)
+b) Industry = Retail + product contains any F&B product
+c) Industry = F&B + product contains "Retail mode"
+
+**#4 F&B SAMPS**
+If industry = F&B AND product contains any F&B product (F&B modes, Kiosk, KDS, Drive-Thru, SRI by MarketMan) AND product does NOT contain "Retail mode" or "Franchise setup"
+
+**#5 Retail SAMPS**
+If industry = Retail AND product contains "Retail mode" AND product does NOT contain any F&B product or "Franchise setup"
+
+**#6 Fallback (no industry match)**
+- Only F&B products selected → F&B SAMPS
+- Only Retail mode selected → Retail SAMPS
+- Only Bookings/Invoices selected → Services SAMPS
+
+## Reset
+- Include a "Reset All" button that clears every selection
+
+## Styling
+- Modern, professional look
+- Use a clean color scheme
+- Radio buttons and checkboxes should be easy to click
+- Disabled sections should be visually greyed out but still visible
+- Result banner should be prominent and eye-catching
+  </script>
+</head>
+<body>
+
+<header>
+  <h1><span>SAMPS</span> Matrix Navigator</h1>
+  <button class="reset-btn" onclick="resetAll()">⟳ Reset All</button>
+</header>
+
+<div class="main-container">
+  <div class="grid">
+    <!-- Step 1: Market -->
+    <div class="section active" id="sec-market">
+      <div class="section-header">
+        <div class="step-badge">1</div>
+        <div class="section-title">Market</div>
+        <div class="section-subtitle">Single pick</div>
+      </div>
+      <div class="section-body">
+        <div class="options-grid" id="market-options"></div>
+      </div>
+    </div>
+
+    <!-- Step 2: Industry -->
+    <div class="section disabled" id="sec-industry">
+      <div class="section-header">
+        <div class="step-badge">2</div>
+        <div class="section-title">Industry</div>
+        <div class="section-subtitle">Single pick</div>
+      </div>
+      <div class="section-body">
+        <div class="options-grid" id="industry-options"></div>
+      </div>
+    </div>
+
+    <!-- Step 3: Category -->
+    <div class="section disabled" id="sec-category">
+      <div class="section-header">
+        <div class="step-badge">3</div>
+        <div class="section-title">Category</div>
+        <div class="section-subtitle" id="category-subtitle">Single pick</div>
+      </div>
+      <div class="section-body">
+        <div id="category-note"></div>
+        <div class="options-grid" id="category-options"></div>
+      </div>
+    </div>
+
+    <!-- Step 4: Products -->
+    <div class="section disabled" id="sec-products">
+      <div class="section-header">
+        <div class="step-badge">4</div>
+        <div class="section-title">Products</div>
+        <div class="section-subtitle">Multi pick</div>
+      </div>
+      <div class="section-body">
+        <div class="options-grid" id="product-options">
+          <div class="products-empty">Select a category first</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result Banner -->
+  <div class="result-banner grey" id="result-banner">
+    <div class="result-status" id="result-status">AWAITING SELECTIONS</div>
+    <div class="result-route" id="result-route">Select a market to begin</div>
+    <div class="result-summary" id="result-summary"></div>
+  </div>
+</div>
+
+<script>
+  // Data definitions
+  const MARKETS = ['US', 'CA', 'JP', 'AU', 'UK', 'EU'];
+  const INDUSTRIES = ['F&B', 'Retail', 'Health & Beauty', 'Professional Services'];
+  const CATEGORIES = ['POS & Dashboard', 'Banking', 'Customers', 'eCommerce', 'Staff', 'Neighborhoods'];
+  const INTL_MARKETS = ['JP', 'AU', 'UK', 'EU'];
+  const DOMESTIC_MARKETS = ['US', 'CA'];
+
+  const CATEGORY_PRODUCTS = {
+    'POS & Dashboard': ['F&B modes', 'Retail mode', 'Bookings mode', 'Invoices', 'Franchise setup', 'Kiosk', 'KDS', 'Drive-Thru', 'SRI by MarketMan'],
+    'Banking': ['Checking', 'Savings', 'Loans', 'Credit Card', 'Bitcoin'],
+    'Customers': ['Marketing', 'Loyalty', 'Messages', 'Customer Directory', 'Gift Cards'],
+    'eCommerce': ['Websites', 'Online Ordering Profiles'],
+    'Staff': ['Shifts', 'Payroll', 'Team Comms'],
+    'Neighborhoods': ['Neighborhoods']
+  };
+
+  const FB_PRODUCTS = ['F&B modes', 'Kiosk', 'KDS', 'Drive-Thru', 'SRI by MarketMan'];
+
+  // State
+  let state = {
+    market: null,
+    industry: null,
+    categories: [],
+    products: []
+  };
+
+  // Initialize
+  function init() {
+    renderMarket();
+    renderIndustry();
+    renderCategory();
+    updateResult();
+  }
+
+  function renderMarket() {
+    const container = document.getElementById('market-options');
+    container.innerHTML = MARKETS.map(m => `
+      <div class="option-item">
+        <input type="radio" name="market" id="market-${m}" value="${m}" onchange="selectMarket('${m}')">
+        <label class="option-label" for="market-${m}">
+          <div class="option-indicator"></div>
+          ${m}
+        </label>
+      </div>
+    `).join('');
+  }
+
+  function renderIndustry() {
+    const container = document.getElementById('industry-options');
+    container.innerHTML = INDUSTRIES.map(ind => {
+      const id = 'industry-' + ind.replace(/[^a-zA-Z0-9]/g, '_');
+      return `
+        <div class="option-item">
+          <input type="radio" name="industry" id="${id}" value="${ind}" onchange="selectIndustry(this.value)">
+          <label class="option-label" for="${id}">
+            <div class="option-indicator"></div>
+            ${ind}
+          </label>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderCategory() {
+    const container = document.getElementById('category-options');
+    const isMulti = state.market && INTL_MARKETS.includes(state.market);
+    const type = isMulti ? 'checkbox' : 'radio';
+    const noteEl = document.getElementById('category-note');
+    const subtitleEl = document.getElementById('category-subtitle');
+
+    if (isMulti) {
+      noteEl.innerHTML = '<div class="category-note">International market — select one or more categories</div>';
+      subtitleEl.textContent = 'Multi pick';
+    } else {
+      noteEl.innerHTML = '';
+      subtitleEl.textContent = 'Single pick';
+    }
+
+    container.innerHTML = CATEGORIES.map(cat => {
+      const id = 'category-' + cat.replace(/[^a-zA-Z0-9]/g, '_');
+      const checked = state.categories.includes(cat) ? 'checked' : '';
+      return `
+        <div class="option-item">
+          <input type="${type}" name="category" id="${id}" value="${cat}" ${checked} onchange="selectCategory()">
+          <label class="option-label" for="${id}">
+            <div class="option-indicator ${isMulti ? 'checkbox' : ''}"></div>
+            ${cat}
+          </label>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderProducts() {
+    const container = document.getElementById('product-options');
+
+    if (state.categories.length === 0) {
+      container.innerHTML = '<div class="products-empty">Select a category first</div>';
+      return;
+    }
+
+    // Collect products from all selected categories
+    let productSet = new Set();
+    state.categories.forEach(cat => {
+      (CATEGORY_PRODUCTS[cat] || []).forEach(p => productSet.add(p));
+    });
+
+    // Always add 3P solutions
+    productSet.add('3P solutions');
+
+    const products = Array.from(productSet);
+
+    container.innerHTML = products.map(p => {
+      const id = 'product-' + p.replace(/[^a-zA-Z0-9]/g, '_');
+      const checked = state.products.includes(p) ? 'checked' : '';
+      return `
+        <div class="option-item">
+          <input type="checkbox" name="product" id="${id}" value="${p}" ${checked} onchange="selectProducts()">
+          <label class="option-label" for="${id}">
+            <div class="option-indicator checkbox"></div>
+            ${p}
+          </label>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Selection handlers
+  function selectMarket(m) {
+    state.market = m;
+    // Clear downstream if market type changed (domestic <-> intl)
+    const oldCategories = [...state.categories];
+    state.categories = [];
+    state.products = [];
+
+    // Enable industry
+    document.getElementById('sec-industry').classList.remove('disabled');
+    document.getElementById('sec-industry').classList.add('active');
+
+    // Keep category/products disabled until industry is selected
+    if (!state.industry) {
+      document.getElementById('sec-category').classList.add('disabled');
+      document.getElementById('sec-category').classList.remove('active');
+      document.getElementById('sec-products').classList.add('disabled');
+      document.getElementById('sec-products').classList.remove('active');
+    } else {
+      document.getElementById('sec-category').classList.remove('disabled');
+      document.getElementById('sec-category').classList.add('active');
+    }
+
+    // Clear category and product selections in DOM
+    document.querySelectorAll('input[name="category"]').forEach(el => el.checked = false);
+    document.querySelectorAll('input[name="product"]').forEach(el => el.checked = false);
+
+    renderCategory();
+    renderProducts();
+    updateSectionStates();
+    updateResult();
+  }
+
+  function selectIndustry(ind) {
+    state.industry = ind;
+
+    // Enable category
+    document.getElementById('sec-category').classList.remove('disabled');
+    document.getElementById('sec-category').classList.add('active');
+
+    // If no category selected, keep products disabled
+    if (state.categories.length === 0) {
+      document.getElementById('sec-products').classList.add('disabled');
+      document.getElementById('sec-products').classList.remove('active');
+    }
+
+    updateSectionStates();
+    updateResult();
+  }
+
+  function selectCategory() {
+    const isMulti = state.market && INTL_MARKETS.includes(state.market);
+    const checked = document.querySelectorAll('input[name="category"]:checked');
+
+    const newCategories = Array.from(checked).map(el => el.value);
+
+    // Determine which categories were removed
+    const removed = state.categories.filter(c => !newCategories.includes(c));
+
+    state.categories = newCategories;
+
+    // Remove products that belong to removed categories and are no longer available
+    if (removed.length > 0) {
+      const availableProducts = new Set();
+      state.categories.forEach(cat => {
+        (CATEGORY_PRODUCTS[cat] || []).forEach(p => availableProducts.add(p));
+      });
+      availableProducts.add('3P solutions');
+      state.products = state.products.filter(p => availableProducts.has(p));
+    }
+
+    // Enable products section
+    if (state.categories.length > 0) {
+      document.getElementById('sec-products').classList.remove('disabled');
+      document.getElementById('sec-products').classList.add('active');
+    } else {
+      document.getElementById('sec-products').classList.add('disabled');
+      document.getElementById('sec-products').classList.remove('active');
+      state.products = [];
+    }
+
+    renderProducts();
+    updateSectionStates();
+    updateResult();
+  }
+
+  function selectProducts() {
+    const checked = document.querySelectorAll('input[name="product"]:checked');
+    state.products = Array.from(checked).map(el => el.value);
+    updateResult();
+  }
+
+  function updateSectionStates() {
+    const secMarket = document.getElementById('sec-market');
+    const secIndustry = document.getElementById('sec-industry');
+    const secCategory = document.getElementById('sec-category');
+    const secProducts = document.getElementById('sec-products');
+
+    // Market is always active
+    secMarket.classList.add('active');
+    secMarket.classList.remove('disabled');
+
+    // Industry enabled after market
+    if (state.market) {
+      secIndustry.classList.remove('disabled');
+    } else {
+      secIndustry.classList.add('disabled');
+      secIndustry.classList.remove('active');
+    }
+
+    // Category enabled after industry
+    if (state.industry) {
+      secCategory.classList.remove('disabled');
+    } else {
+      secCategory.classList.add('disabled');
+      secCategory.classList.remove('active');
+    }
+
+    // Products enabled after category
+    if (state.categories.length > 0) {
+      secProducts.classList.remove('disabled');
+    } else {
+      secProducts.classList.add('disabled');
+      secProducts.classList.remove('active');
+    }
+  }
+
+  // SAMPS Routing Logic
+  function computeRoute() {
+    const { market, industry, categories, products } = state;
+
+    if (!market) return { route: null, status: 'none' };
+
+    // International markets — result known immediately
+    if (market === 'JP') return { route: 'JP SAMPS', status: allComplete() ? 'final' : 'early' };
+    if (market === 'AU') return { route: 'AU SAMPS', status: allComplete() ? 'final' : 'early' };
+    if (market === 'UK' || market === 'EU') return { route: 'UK/EU SAMPS', status: allComplete() ? 'final' : 'early' };
+
+    // US/CA
+    if (!industry || categories.length === 0) return { route: null, status: 'none' };
+
+    // For US/CA, category is single-pick
+    const category = categories[0];
+
+    // Non-POS categories — result known on category selection
+    if (category === 'Banking') return { route: 'Banking SAMPS', status: allComplete() ? 'final' : 'early' };
+    if (category === 'eCommerce') return { route: 'eCom SAMPS', status: allComplete() ? 'final' : 'early' };
+    if (category === 'Customers') return { route: 'Customers SAMPS', status: allComplete() ? 'final' : 'early' };
+    if (category === 'Staff') return { route: 'Staff SAMPS', status: allComplete() ? 'final' : 'early' };
+    if (category === 'Neighborhoods') return { route: 'Neighborhoods SAMPS', status: allComplete() ? 'final' : 'early' };
+
+    // POS & Dashboard — need products
+    if (category === 'POS & Dashboard') {
+      if (products.length === 0) return { route: null, status: 'none' };
+
+      const hasProduct = (p) => products.includes(p);
+      const hasFBProduct = FB_PRODUCTS.some(p => products.includes(p));
+      const hasRetailMode = hasProduct('Retail mode');
+      const hasFranchise = hasProduct('Franchise setup');
+      const hasBookings = hasProduct('Bookings mode');
+      const hasInvoices = hasProduct('Invoices');
+
+      // #1 Franchise SAMPS — HIGHEST PRIORITY
+      if (hasFranchise) return { route: 'Franchise SAMPS', status: 'final' };
+
+      // #2 Services SAMPS
+      if ((industry === 'Health & Beauty' || industry === 'Professional Services') && (hasBookings || hasInvoices)) {
+        return { route: 'Services SAMPS', status: 'final' };
+      }
+
+      // #3 Hybrid RTL/F&B SAMPS
+      // a) ANY industry + Retail mode AND any F&B product
+      if (hasRetailMode && hasFBProduct) return { route: 'Hybrid RTL/F&B SAMPS', status: 'final' };
+      // b) Industry = Retail + any F&B product
+      if (industry === 'Retail' && hasFBProduct) return { route: 'Hybrid RTL/F&B SAMPS', status: 'final' };
+      // c) Industry = F&B + Retail mode
+      if (industry === 'F&B' && hasRetailMode) return { route: 'Hybrid RTL/F&B SAMPS', status: 'final' };
+
+      // #4 F&B SAMPS
+      if (industry === 'F&B' && hasFBProduct && !hasRetailMode && !hasFranchise) {
+        return { route: 'F&B SAMPS', status: 'final' };
+      }
+
+      // #5 Retail SAMPS
+      if (industry === 'Retail' && hasRetailMode && !hasFBProduct && !hasFranchise) {
+        return { route: 'Retail SAMPS', status: 'final' };
+      }
+
+      // #6 Fallback
+      if (hasFBProduct && !hasRetailMode) return { route: 'F&B SAMPS', status: 'final' };
+      if (hasRetailMode && !hasFBProduct) return { route: 'Retail SAMPS', status: 'final' };
+      if ((hasBookings || hasInvoices) && !hasFBProduct && !hasRetailMode) return { route: 'Services SAMPS', status: 'final' };
+
+      // Products selected but no routing match (e.g., only 3P solutions, only Kiosk for non-F&B industry... wait, Kiosk IS F&B product)
+      // If only non-routing products selected (like only 3P solutions)
+      const routingProducts = products.filter(p => p !== '3P solutions');
+      if (routingProducts.length === 0) return { route: null, status: 'none' };
+
+      return { route: 'POS & Dashboard SAMPS (Review Needed)', status: 'final' };
+    }
+
+    return { route: null, status: 'none' };
+  }
+
+  function allComplete() {
+    return state.market && state.industry && state.categories.length > 0 && state.products.length > 0;
+  }
+
+  function updateResult() {
+    const banner = document.getElementById('result-banner');
+    const statusEl = document.getElementById('result-status');
+    const routeEl = document.getElementById('result-route');
+    const summaryEl = document.getElementById('result-summary');
+
+    const { route, status } = computeRoute();
+
+    // Build summary
+    let summaryParts = [];
+    if (state.market) summaryParts.push(`<span class="tag"><span class="tag-label">Market:</span> ${state.market}</span>`);
+    if (state.industry) summaryParts.push(`<span class="tag"><span class="tag-label">Industry:</span> ${state.industry}</span>`);
+    if (state.categories.length > 0) summaryParts.push(`<span class="tag"><span class="tag-label">Category:</span> ${state.categories.join(', ')}</span>`);
+    if (state.products.length > 0) summaryParts.push(`<span class="tag"><span class="tag-label">Products:</span> ${state.products.join(', ')}</span>`);
+
+    summaryEl.innerHTML = summaryParts.join('');
+
+    if (!route) {
+      banner.className = 'result-banner grey';
+      statusEl.textContent = 'AWAITING SELECTIONS';
+      routeEl.textContent = state.market ? 'Continue selecting options to determine routing' : 'Select a market to begin';
+    } else if (status === 'early') {
+      banner.className = 'result-banner amber';
+      statusEl.textContent = 'BASED ON YOUR SELECTIONS SO FAR';
+      routeEl.textContent = '→ ' + route;
+    } else {
+      banner.className = 'result-banner green';
+      statusEl.textContent = 'FINAL ROUTING — ALL SELECTIONS COMPLETE';
+      routeEl.textContent = '✓ ' + route;
+    }
+  }
+
+  function resetAll() {
+    state = { market: null, industry: null, categories: [], products: [] };
+
+    // Uncheck all inputs
+    document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(el => el.checked = false);
+
+    // Reset section states
+    document.getElementById('sec-market').classList.add('active');
+    document.getElementById('sec-market').classList.remove('disabled');
+    document.getElementById('sec-industry').classList.add('disabled');
+    document.getElementById('sec-industry').classList.remove('active');
+    document.getElementById('sec-category').classList.add('disabled');
+    document.getElementById('sec-category').classList.remove('active');
+    document.getElementById('sec-products').classList.add('disabled');
+    document.getElementById('sec-products').classList.remove('active');
+
+    renderCategory();
+    renderProducts();
+    updateResult();
+  }
+
+  init();
+</script>
+</body>
+</html>
